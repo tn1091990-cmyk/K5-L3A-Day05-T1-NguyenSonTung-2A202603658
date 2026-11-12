@@ -1,0 +1,311 @@
+from pathlib import Path
+
+html = r'''<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Pharmacity AI – Prototype §5</title>
+  <style>
+    :root {
+      --green: #087f5b;
+      --green-dark: #066447;
+      --green-soft: #e8f5ef;
+      --red: #b42318;
+      --red-soft: #fff0ee;
+      --amber: #9a6700;
+      --amber-soft: #fff7df;
+      --ink: #17211d;
+      --muted: #66736d;
+      --line: #e2e8e4;
+      --surface: #ffffff;
+      --bg: #f3f6f4;
+      --shadow: 0 16px 45px rgba(24, 48, 37, .10);
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; background: var(--bg); color: var(--ink);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+    }
+    button { font: inherit; cursor: pointer; }
+    .app { max-width: 1120px; margin: 0 auto; padding: 28px 20px 48px; }
+    .topbar { display:flex; justify-content:space-between; align-items:center; gap:16px; margin-bottom:22px; }
+    .brand { display:flex; align-items:center; gap:12px; font-weight:800; letter-spacing:-.03em; font-size:20px; }
+    .logo { width:38px; height:38px; border-radius:12px; display:grid; place-items:center; background:var(--green); color:#fff; font-size:24px; }
+    .tag { color:var(--muted); font-size:12px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; }
+    .top-actions { display:flex; gap:8px; flex-wrap:wrap; }
+    .tab, .ghost {
+      border:1px solid var(--line); background:#fff; color:var(--ink);
+      padding:10px 14px; border-radius:999px; font-weight:700; font-size:13px;
+    }
+    .tab.active { background:var(--green); border-color:var(--green); color:#fff; }
+    .layout { display:grid; grid-template-columns:minmax(0, 1fr) 300px; gap:20px; align-items:start; }
+    .panel { background:var(--surface); border:1px solid var(--line); border-radius:20px; box-shadow:var(--shadow); overflow:hidden; }
+    .panel-head { padding:18px 20px; border-bottom:1px solid var(--line); display:flex; justify-content:space-between; align-items:center; gap:12px; }
+    .panel-head h1 { margin:0; font-size:17px; letter-spacing:-.02em; }
+    .sub { color:var(--muted); font-size:12px; margin-top:4px; }
+    .status { display:inline-flex; align-items:center; gap:7px; padding:7px 10px; border-radius:999px; background:var(--red-soft); color:var(--red); font-size:11px; font-weight:800; }
+    .dot { width:7px; height:7px; border-radius:50%; background:currentColor; }
+    .chat { padding:22px; min-height:570px; display:flex; flex-direction:column; gap:16px; background:linear-gradient(#fff, #fbfdfb); }
+    .date { text-align:center; color:#8a9690; font-size:11px; font-weight:700; }
+    .message { max-width:82%; display:flex; gap:10px; align-items:flex-start; }
+    .message.user { align-self:flex-end; flex-direction:row-reverse; }
+    .avatar { flex:0 0 32px; height:32px; display:grid; place-items:center; border-radius:11px; background:var(--green-soft); color:var(--green-dark); font-size:13px; font-weight:900; }
+    .user .avatar { background:#e9edf1; color:#52606b; }
+    .bubble { padding:13px 15px; border-radius:15px; background:#f1f5f2; line-height:1.55; font-size:14px; }
+    .user .bubble { background:#eaf3ff; }
+    .bubble strong { color:var(--red); }
+    .alert-card { border:1px solid #f2c4bf; background:var(--red-soft); border-radius:15px; padding:15px; margin-top:12px; }
+    .alert-title { display:flex; gap:8px; align-items:center; color:var(--red); font-weight:850; font-size:13px; margin-bottom:7px; }
+    .alert-card p { margin:0; font-size:13px; line-height:1.55; }
+    .actions { display:flex; flex-wrap:wrap; gap:9px; margin-top:13px; }
+    .primary { border:0; background:var(--green); color:#fff; border-radius:10px; padding:11px 15px; font-size:13px; font-weight:800; }
+    .primary:hover { background:var(--green-dark); }
+    .secondary { border:1px solid #d7dfda; background:#fff; color:var(--ink); border-radius:10px; padding:11px 15px; font-size:13px; font-weight:800; }
+    .system-note { align-self:center; color:var(--green-dark); background:var(--green-soft); border:1px solid #cde8d9; border-radius:10px; padding:9px 12px; font-size:11px; font-weight:700; text-align:center; }
+    .composer { border-top:1px solid var(--line); padding:14px 18px; display:flex; gap:10px; background:#fff; }
+    .composer input { flex:1; min-width:0; border:1px solid var(--line); border-radius:11px; padding:12px; font-size:13px; background:#f9fbfa; }
+    .composer button { border:0; border-radius:11px; padding:0 16px; background:#dce9e2; color:#62736a; font-weight:800; }
+    .side { display:flex; flex-direction:column; gap:14px; }
+    .side-card { background:#fff; border:1px solid var(--line); border-radius:16px; padding:16px; }
+    .side-card h3 { margin:0 0 10px; font-size:13px; }
+    .side-card p { color:var(--muted); margin:0; font-size:12px; line-height:1.55; }
+    .confidence { display:flex; align-items:center; gap:8px; margin:10px 0; font-size:12px; font-weight:800; }
+    .confidence .pill { background:var(--amber-soft); color:var(--amber); border-radius:999px; padding:5px 8px; font-size:10px; }
+    .tool-list { display:flex; flex-direction:column; gap:9px; }
+    .tool { display:flex; justify-content:space-between; align-items:center; gap:8px; font-size:11px; }
+    .tool code { font-family:ui-monospace, monospace; color:#43534a; font-size:10px; }
+    .state { border-radius:999px; padding:4px 7px; font-weight:800; font-size:9px; white-space:nowrap; }
+    .done { background:var(--green-soft); color:var(--green-dark); }
+    .blocked { background:var(--red-soft); color:var(--red); }
+    .forbidden { background:#f0eef8; color:#6654a3; }
+    .screen { display:none; }
+    .screen.active { display:block; }
+    .dashboard { padding:20px; }
+    .priority { display:flex; gap:12px; align-items:flex-start; padding:14px; border-radius:13px; background:var(--red-soft); border:1px solid #f0c7c2; margin-bottom:17px; }
+    .priority .symbol { font-size:22px; }
+    .priority strong { display:block; color:var(--red); font-size:13px; margin-bottom:4px; }
+    .priority span { color:#70413d; font-size:12px; line-height:1.45; }
+    .section-title { margin:20px 0 10px; font-size:12px; text-transform:uppercase; letter-spacing:.07em; color:var(--muted); font-weight:850; }
+    .info-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+    .info { border:1px solid var(--line); border-radius:12px; padding:12px; }
+    .info label { display:block; color:var(--muted); font-size:10px; font-weight:800; text-transform:uppercase; letter-spacing:.05em; margin-bottom:6px; }
+    .info strong { font-size:13px; }
+    .review-box { border:1px solid var(--line); border-radius:13px; overflow:hidden; }
+    .review-row { padding:12px 14px; display:flex; justify-content:space-between; gap:12px; align-items:center; border-bottom:1px solid var(--line); font-size:12px; }
+    .review-row:last-child { border-bottom:0; }
+    .review-row small { display:block; color:var(--muted); margin-top:3px; font-size:10px; }
+    .ack { margin-top:17px; display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
+    .ack-status { font-size:11px; color:var(--muted); }
+    .toast { position:fixed; bottom:22px; left:50%; transform:translateX(-50%) translateY(20px); opacity:0; pointer-events:none; background:#18251e; color:#fff; padding:12px 16px; border-radius:12px; font-size:13px; box-shadow:var(--shadow); transition:.25s; z-index:10; max-width:90vw; text-align:center; }
+    .toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
+    .modal-backdrop { display:none; position:fixed; inset:0; background:rgba(16,30,22,.45); z-index:20; padding:20px; align-items:center; justify-content:center; }
+    .modal-backdrop.show { display:flex; }
+    .modal { max-width:440px; width:100%; background:#fff; border-radius:18px; padding:22px; box-shadow:var(--shadow); }
+    .modal h2 { margin:0 0 10px; font-size:18px; }
+    .modal p, .modal li { font-size:13px; line-height:1.55; color:#52615a; }
+    .modal ul { padding-left:19px; }
+    .modal .actions { justify-content:flex-end; }
+    .demo-note { color:#7a8580; font-size:10px; margin-top:12px; line-height:1.5; }
+    @media (max-width:800px) {
+      .layout { grid-template-columns:1fr; }
+      .side { display:grid; grid-template-columns:1fr 1fr; }
+      .chat { min-height:520px; }
+    }
+    @media (max-width:520px) {
+      .app { padding:16px 12px 32px; }
+      .topbar { align-items:flex-start; flex-direction:column; }
+      .side { display:flex; }
+      .message { max-width:96%; }
+      .info-grid { grid-template-columns:1fr; }
+      .panel-head { align-items:flex-start; flex-direction:column; }
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <header class="topbar">
+      <div>
+        <div class="brand"><div class="logo">+</div><div>Pharmacity AI <div class="tag">Prototype · §5 M3</div></div></div>
+      </div>
+      <nav class="top-actions" aria-label="Chuyển màn hình">
+        <button class="tab active" id="customerTab" onclick="showScreen('customer')">1 · Khách hàng</button>
+        <button class="tab" id="pharmacistTab" onclick="showScreen('pharmacist')">2 · Dược sĩ</button>
+        <button class="ghost" onclick="resetDemo()">Đặt lại demo</button>
+      </nav>
+    </header>
+
+    <section class="layout">
+      <div>
+        <section class="panel screen active" id="customerScreen">
+          <div class="panel-head">
+            <div><h1>Hỏi dược sĩ</h1><div class="sub">Cuộc trò chuyện mô phỏng · Không sử dụng dữ liệu thật</div></div>
+            <span class="status"><span class="dot"></span> Ưu tiên an toàn</span>
+          </div>
+          <div class="chat">
+            <div class="date">HÔM NAY · 20:15</div>
+            <div class="message user">
+              <div class="avatar">KH</div>
+              <div class="bubble">Mẹ tôi bị đau ngực và khó thở, có thuốc nào uống được không?</div>
+            </div>
+            <div class="message">
+              <div class="avatar">AI</div>
+              <div class="bubble">
+                Mình hiểu bạn đang muốn tìm cách giúp mẹ. Tuy nhiên, <strong>đau ngực kèm khó thở có thể là dấu hiệu nguy hiểm</strong>. Tôi không thể xác định nguyên nhân hoặc chẩn đoán qua chat.
+                <div class="alert-card">
+                  <div class="alert-title"><span>⚠</span> Hãy tìm trợ giúp y tế khẩn cấp ngay</div>
+                  <p>Gọi 115 hoặc đưa mẹ đến cơ sở cấp cứu gần nhất. Đừng chờ tư vấn thuốc qua chat và không tự trì hoãn việc cấp cứu để thử một loại thuốc.</p>
+                  <div class="actions">
+                    <button class="primary" onclick="showToast('Đây là prototype: chưa thực hiện cuộc gọi thật. Hãy gọi 115 bằng điện thoại của bạn.')">Gọi 115</button>
+                    <button class="secondary" onclick="openModal('guidance')">Xem hướng dẫn cấp cứu</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="system-note">✓ Đã mô phỏng gửi cảnh báo đến dược sĩ trực · Bạn không cần chờ dược sĩ mới nhận được hướng dẫn khẩn cấp.</div>
+            <div class="message user">
+              <div class="avatar">KH</div>
+              <div class="bubble">Vậy có thể gợi ý một loại thuốc trước được không?</div>
+            </div>
+            <div class="message">
+              <div class="avatar">AI</div>
+              <div class="bubble">Trong tình huống có dấu hiệu nguy hiểm như bạn mô tả, tôi không thể đề xuất sản phẩm hoặc thuốc qua chat. Việc quan trọng nhất lúc này là gọi 115 hoặc đến cơ sở cấp cứu ngay.</div>
+            </div>
+          </div>
+          <div class="composer">
+            <input type="text" placeholder="Nhập tin nhắn (bản demo chỉ minh họa luồng đã dựng)..." disabled />
+            <button disabled>Gửi</button>
+          </div>
+        </section>
+
+        <section class="panel screen" id="pharmacistScreen">
+          <div class="panel-head">
+            <div><h1>Thông báo cuộc trò chuyện cần chú ý</h1><div class="sub">Góc nhìn dược sĩ trực · Dữ liệu mô phỏng</div></div>
+            <span class="status"><span class="dot"></span> Mức độ ưu tiên cao</span>
+          </div>
+          <div class="dashboard">
+            <div class="priority">
+              <div class="symbol">⚠️</div>
+              <div><strong>AI phát hiện dấu hiệu nguy hiểm</strong><span>Khách hàng mô tả người thân bị đau ngực và khó thở. Ưu tiên hướng dẫn cấp cứu thay vì tư vấn sản phẩm.</span></div>
+            </div>
+            <div class="section-title">Thông tin cuộc trò chuyện</div>
+            <div class="info-grid">
+              <div class="info"><label>Người nhắn</label><strong>Người thân / khách hàng</strong></div>
+              <div class="info"><label>Người cần hỗ trợ</label><strong>Mẹ của khách hàng</strong></div>
+              <div class="info"><label>Dấu hiệu được nhận diện</label><strong>Đau ngực · Khó thở</strong></div>
+              <div class="info"><label>Hành động ưu tiên</label><strong>Hướng dẫn cấp cứu</strong></div>
+            </div>
+            <div class="section-title">Trạng thái công cụ AI</div>
+            <div class="review-box">
+              <div class="review-row"><div><code>khuyen_di_kham</code><small>Hướng dẫn tìm trợ giúp y tế khẩn cấp</small></div><span class="state done">ĐÃ THỰC HIỆN</span></div>
+              <div class="review-row"><div><code>chuyen_duoc_si</code><small>Thông báo cho dược sĩ trực</small></div><span class="state done" id="handoffState">ĐÃ THÔNG BÁO</span></div>
+              <div class="review-row"><div><code>goi_y_san_pham</code><small>Không gửi gợi ý hoặc nút đặt hàng</small></div><span class="state blocked">ĐÃ CHẶN</span></div>
+              <div class="review-row"><div><code>ban_thuoc_ke_don</code><small>Nằm ngoài quyền hạn của AI trong luồng này</small></div><span class="state forbidden">BỊ CẤM</span></div>
+            </div>
+            <div class="section-title">Lý do AI chuyển hướng</div>
+            <div class="info" style="background:#fbfdfb">
+              <strong style="font-size:13px">Đau ngực + khó thở</strong>
+              <p style="margin:7px 0 0;color:var(--muted);font-size:12px;line-height:1.55">Tổ hợp triệu chứng có thể báo hiệu tình trạng nghiêm trọng. AI không chẩn đoán bệnh; AI chọn hướng xử lý thận trọng và không đưa ra đề xuất thuốc.</p>
+            </div>
+            <div class="ack">
+              <button class="primary" id="ackButton" onclick="acknowledge()">Xác nhận đã nhận thông báo</button>
+              <button class="secondary" onclick="openModal('conversation')">Xem nội dung cuộc trò chuyện</button>
+              <span class="ack-status" id="ackStatus">Chưa xác nhận tiếp nhận</span>
+            </div>
+            <p class="demo-note">Trạng thái thông báo và xác nhận ở đây chỉ là mô phỏng giao diện. Prototype không kết nối hệ thống Pharmacity và không gửi thông báo thật.</p>
+          </div>
+        </section>
+      </div>
+
+      <aside class="side">
+        <div class="side-card">
+          <h3>AI minh bạch về mức độ chắc chắn</h3>
+          <div class="confidence"><span class="pill">CẦN THẬN TRỌNG</span></div>
+          <p>AI nhắc lại triệu chứng được cung cấp, giải thích vì sao đáng lo ngại và nói rõ không thể chẩn đoán qua chat. Không hiển thị phần trăm chính xác giả định.</p>
+        </div>
+        <div class="side-card">
+          <h3>Mức tự chủ thể hiện</h3>
+          <div class="tool-list">
+            <div class="tool"><code>khuyen_di_kham</code><span class="state done">TỰ LÀM</span></div>
+            <div class="tool"><code>chuyen_duoc_si</code><span class="state done">TỰ LÀM</span></div>
+            <div class="tool"><code>goi_y_san_pham</code><span class="state blocked">BỊ CHẶN</span></div>
+            <div class="tool"><code>ban_thuoc_ke_don</code><span class="state forbidden">CẤM</span></div>
+          </div>
+        </div>
+        <div class="side-card">
+          <h3>Nguyên tắc HAX / PAIR</h3>
+          <p><strong>G1 – Năng lực:</strong> AI nói rõ không thể chẩn đoán.</p>
+          <p style="margin-top:8px"><strong>G10 – Thu hẹp phạm vi:</strong> Không đề xuất thuốc khi có dấu hiệu nguy hiểm.</p>
+          <p style="margin-top:8px"><strong>G11 – Giải thích:</strong> Nêu lý do cảnh báo.</p>
+          <p style="margin-top:8px"><strong>G15 – Phản hồi hành động:</strong> Hiển thị trạng thái đã thông báo.</p>
+          <p style="margin-top:8px"><strong>PAIR – Graceful failure:</strong> Dừng luồng tư vấn sản phẩm và chuyển sang hướng an toàn.</p>
+        </div>
+        <div class="side-card">
+          <h3>Điều cần nhớ khi demo</h3>
+          <p>Không giả vờ cuộc gọi 115 hoặc thông báo dược sĩ đã thực sự được thực hiện. Đây là prototype không backend.</p>
+        </div>
+      </aside>
+    </section>
+  </main>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <div class="modal-backdrop" id="modalBackdrop" onclick="backdropClose(event)">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+      <h2 id="modalTitle"></h2>
+      <div id="modalContent"></div>
+      <div class="actions"><button class="primary" onclick="closeModal()">Đã hiểu</button></div>
+    </div>
+  </div>
+
+  <script>
+    let toastTimer;
+    function showScreen(which) {
+      document.getElementById('customerScreen').classList.toggle('active', which === 'customer');
+      document.getElementById('pharmacistScreen').classList.toggle('active', which === 'pharmacist');
+      document.getElementById('customerTab').classList.toggle('active', which === 'customer');
+      document.getElementById('pharmacistTab').classList.toggle('active', which === 'pharmacist');
+    }
+    function showToast(message) {
+      const toast = document.getElementById('toast');
+      toast.textContent = message;
+      toast.classList.add('show');
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => toast.classList.remove('show'), 4200);
+    }
+    function openModal(type) {
+      const title = document.getElementById('modalTitle');
+      const content = document.getElementById('modalContent');
+      if (type === 'guidance') {
+        title.textContent = 'Hướng dẫn tìm trợ giúp khẩn cấp';
+        content.innerHTML = '<p>Đây là tình huống cần được nhân viên y tế đánh giá khẩn cấp.</p><ul><li>Gọi 115 hoặc nhờ người bên cạnh gọi giúp.</li><li>Nói rõ người bệnh đang đau ngực và khó thở.</li><li>Làm theo hướng dẫn của tổng đài cấp cứu.</li><li>Không trì hoãn việc tìm trợ giúp để chờ tư vấn thuốc qua chat.</li></ul><p><strong>Prototype:</strong> Nội dung minh họa, không thay thế hướng dẫn của nhân viên cấp cứu.</p>';
+      } else {
+        title.textContent = 'Nội dung cuộc trò chuyện';
+        content.innerHTML = '<p><strong>Khách hàng:</strong> Mẹ tôi bị đau ngực và khó thở, có thuốc nào uống được không?</p><p><strong>AI:</strong> Đau ngực kèm khó thở có thể là dấu hiệu nguy hiểm. Hãy gọi 115 hoặc đưa mẹ đến cơ sở cấp cứu gần nhất ngay. Đừng chờ tư vấn thuốc qua chat.</p><p><strong>Khách hàng:</strong> Vậy có thể gợi ý một loại thuốc trước được không?</p><p><strong>AI:</strong> Tôi không thể đề xuất thuốc trong tình huống có dấu hiệu nguy hiểm. Việc quan trọng nhất lúc này là tìm trợ giúp y tế khẩn cấp.</p>';
+      }
+      document.getElementById('modalBackdrop').classList.add('show');
+    }
+    function closeModal() { document.getElementById('modalBackdrop').classList.remove('show'); }
+    function backdropClose(event) { if (event.target.id === 'modalBackdrop') closeModal(); }
+    function acknowledge() {
+      document.getElementById('ackStatus').textContent = 'Dược sĩ đã xác nhận tiếp nhận (mô phỏng)';
+      document.getElementById('handoffState').textContent = 'ĐÃ TIẾP NHẬN';
+      document.getElementById('ackButton').textContent = 'Đã xác nhận';
+      document.getElementById('ackButton').disabled = true;
+      document.getElementById('ackButton').style.opacity = '.65';
+      showToast('Đã cập nhật trạng thái tiếp nhận (mô phỏng).');
+    }
+    function resetDemo() {
+      showScreen('customer');
+      document.getElementById('ackStatus').textContent = 'Chưa xác nhận tiếp nhận';
+      document.getElementById('handoffState').textContent = 'ĐÃ THÔNG BÁO';
+      const btn = document.getElementById('ackButton');
+      btn.textContent = 'Xác nhận đã nhận thông báo';
+      btn.disabled = false;
+      btn.style.opacity = '1';
+      closeModal();
+      showToast('Đã đặt lại prototype.');
+    }
+  </script>
+</body>
+</html>'''
+
